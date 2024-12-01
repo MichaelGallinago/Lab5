@@ -7,6 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import net.micg.lab5.data.BrightnessLevels
+import net.micg.lab5.data.Color
 import net.micg.lab5.data.HttpResponseState
 import net.micg.lab5.domain.GetBrightnessLevelsUseCase
 import net.micg.lab5.domain.GetColorNamesUseCase
@@ -35,17 +37,26 @@ class MainViewModel @Inject constructor(
     private val _lampState = MutableLiveData<Boolean>()
     val lampState: LiveData<Boolean> get() = _lampState
 
-    private val _color = MutableLiveData<String>()
-    val color: LiveData<String> get() = _color
+    private val _color = MutableLiveData<Color>()
+    val color: LiveData<Color> get() = _color
 
-    private val _colors = MutableLiveData<List<String>>()
-    val colors: LiveData<List<String>> get() = _colors
+    private val _colors = MutableLiveData<List<Color>>()
+    val colors: LiveData<List<Color>> get() = _colors
 
     private val _brightness = MutableLiveData<Int>()
     val brightness: LiveData<Int> get() = _brightness
 
+    private val _brightnessLevels = MutableLiveData<BrightnessLevels>()
+    val brightnessLevels: LiveData<BrightnessLevels> get() = _brightnessLevels
+
     fun switchLampState(state: Boolean) = viewModelScope.launch(Dispatchers.IO) {
         if (state) turnOnLampUseCase() else turnOffLampUseCase()
+    }
+
+    fun initData() {
+        syncColors()
+        syncBrightnessLevels()
+        syncData()
     }
 
     fun syncData() {
@@ -58,11 +69,15 @@ class MainViewModel @Inject constructor(
     private fun syncBrightness() = syncLiveData(_brightness) { getCurrentBrightnessUseCase() }
     private fun syncColor() = syncLiveData(_color) { getCurrentColorUseCase() }
 
+    private fun syncColors() = syncLiveData(_colors) { getColorsUseCase() }
+    private fun syncBrightnessLevels() =
+        syncLiveData(_brightnessLevels) { getBrightnessLevelsUseCase() }
+
     fun setBrightness(brightness: Int) = viewModelScope.launch(Dispatchers.IO) {
         setBrightnessUseCase(brightness)
     }
 
-    fun setColor(color: String)  = viewModelScope.launch(Dispatchers.IO) {
+    fun setColor(color: String) = viewModelScope.launch(Dispatchers.IO) {
         setColorUseCase(color)
     }
 

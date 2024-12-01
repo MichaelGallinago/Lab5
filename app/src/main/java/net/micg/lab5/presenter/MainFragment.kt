@@ -36,6 +36,8 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         }
     }
 
+    private var precision: Int = 1
+
     override fun onAttach(context: Context) {
         context.appComponent.inject(this)
         super.onAttach(context)
@@ -49,12 +51,12 @@ class MainFragment : Fragment(R.layout.fragment_main) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        setUpSynchronization()
+        setUpObservers()
         setUpFragment()
-        viewModel.syncData()
+        viewModel.initData()
     }
 
-    private fun setUpSynchronization() = with(viewModel) {
+    private fun setUpObservers() = with(viewModel) {
         with(binding) {
             lampState.observe(viewLifecycleOwner) { state ->
                 switchButton.isChecked = state
@@ -64,13 +66,21 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                 brightnessBar.progress = brightness
             }
 
-            color.observe(viewLifecycleOwner) { color ->
+            brightnessLevels.observe(viewLifecycleOwner) { brightnessLevels ->
+                with(brightnessBar) {
+                    precision = brightnessLevels.precision
+                    min = brightnessLevels.min
+                    max = brightnessLevels.max
+                }
+            }
+
+            /*color.observe(viewLifecycleOwner) { color ->
                 colorSelector.setSelection(color.id)
             }
 
             colors.observe(viewLifecycleOwner) { colors ->
                 setUpSpinner(colors)
-            }
+            }*/
         }
     }
 
@@ -81,7 +91,7 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             viewModel.switchLampState(isChecked)
         }
 
-        colorSelector.onItemSelectedListener = ColorSpinnerItemSelectedListener()
+        //colorSelector.onItemSelectedListener = ColorSpinnerItemSelectedListener()
     }
 
     private fun setUpSpinner(colors: List<Color>) = with(
@@ -103,6 +113,10 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         override fun onStartTrackingTouch(seekBar: SeekBar) {}
 
         override fun onStopTrackingTouch(seekBar: SeekBar) {
+            seekBar.progress = kotlin.math.round(
+                seekBar.progress.toDouble() / precision.toDouble()
+            ).toInt() * precision
+
             viewModel.setBrightness(seekBar.progress)
         }
     }
@@ -114,13 +128,11 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             position: Int,
             id: Long,
         ) {
-            // Получаем выбранный элемент
             val selectedItem = parentView.getItemAtPosition(position) as String
             Toast.makeText(context, "Выбрано: $selectedItem", Toast.LENGTH_SHORT).show()
         }
 
         override fun onNothingSelected(parentView: AdapterView<*>) {
-            // Действия, когда ничего не выбрано
             Toast.makeText(context, "Ничего не выбрано", Toast.LENGTH_SHORT).show()
         }
     }
