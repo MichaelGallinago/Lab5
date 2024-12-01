@@ -46,10 +46,6 @@ class MainViewModel @Inject constructor(
     private val _brightnessLevels = MutableLiveData<BrightnessLevels>()
     val brightnessLevels: LiveData<BrightnessLevels> get() = _brightnessLevels
 
-    fun switchLampState(state: Boolean) = viewModelScope.launch(Dispatchers.IO) {
-        if (state) turnOnLampUseCase() else turnOffLampUseCase()
-    }
-
     fun initData() {
         syncColors()
         syncBrightnessLevels()
@@ -62,13 +58,9 @@ class MainViewModel @Inject constructor(
         syncColor()
     }
 
-    private fun syncLampState() = syncLiveData(_lampState) { getLampStateUseCase() }
-    private fun syncBrightness() = syncLiveData(_brightness) { getCurrentBrightnessUseCase() }
-    private fun syncColor() = syncLiveData(_colorName) { getCurrentColorUseCase() }
-
-    private fun syncColors() = syncLiveData(_colorNames) { getColorNamesUseCase() }
-    private fun syncBrightnessLevels() =
-        syncLiveData(_brightnessLevels) { getBrightnessLevelsUseCase() }
+    fun switchLampState(state: Boolean) = viewModelScope.launch(Dispatchers.IO) {
+        if (state) turnOnLampUseCase() else turnOffLampUseCase()
+    }
 
     fun setBrightness(brightness: Int) = viewModelScope.launch(Dispatchers.IO) {
         setBrightnessUseCase(brightness)
@@ -78,6 +70,14 @@ class MainViewModel @Inject constructor(
         if (name == EMPTY_COLOR) return@launch
         setColorUseCase(name)
     }
+
+    private fun syncLampState() = syncLiveData(_lampState) { getLampStateUseCase() }
+    private fun syncBrightness() = syncLiveData(_brightness) { getCurrentBrightnessUseCase() }
+    private fun syncColor() = syncLiveData(_colorName) { getCurrentColorUseCase() }
+
+    private fun syncColors() = syncLiveData(_colorNames) { getColorNamesUseCase() }
+    private fun syncBrightnessLevels() =
+        syncLiveData(_brightnessLevels) { getBrightnessLevelsUseCase() }
 
     private fun <T> syncLiveData(
         liveData: MutableLiveData<T>,
