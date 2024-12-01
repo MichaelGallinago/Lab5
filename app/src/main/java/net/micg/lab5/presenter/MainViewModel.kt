@@ -1,6 +1,13 @@
 package net.micg.lab5.presenter
 
+import android.util.Log
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import net.micg.lab5.data.HttpResponseState
 import net.micg.lab5.domain.GetBrightnessLevelsUseCase
 import net.micg.lab5.domain.GetColorNamesUseCase
 import net.micg.lab5.domain.GetColorsUseCase
@@ -23,7 +30,51 @@ class MainViewModel @Inject constructor(
     private val getCurrentColorUseCase: GetCurrentColorUseCase,
     private val getBrightnessLevelsUseCase: GetBrightnessLevelsUseCase,
     private val setBrightnessUseCase: SetBrightnessUseCase,
-    private val getCurrentBrightnessUseCase: GetCurrentBrightnessUseCase
+    private val getCurrentBrightnessUseCase: GetCurrentBrightnessUseCase,
 ) : ViewModel() {
-    
+    private val _lampState = MutableLiveData<Boolean>()
+    val lampState: LiveData<Boolean> get() = _lampState
+
+    private val _color = MutableLiveData<String>()
+    val color: LiveData<String> get() = _color
+
+    private val _colors = MutableLiveData<List<String>>()
+    val colors: LiveData<List<String>> get() = _colors
+
+    private val _brightness = MutableLiveData<Int>()
+    val brightness: LiveData<Int> get() = _brightness
+
+    fun switchLampState(state: Boolean) = viewModelScope.launch(Dispatchers.IO) {
+        if (state) turnOnLampUseCase() else turnOffLampUseCase()
+    }
+
+    fun syncData() {
+        syncLampState()
+        syncBrightness()
+        syncColor()
+    }
+
+    private fun syncLampState() = syncLiveData(_lampState) { getLampStateUseCase() }
+    private fun syncBrightness() = syncLiveData(_brightness) { getCurrentBrightnessUseCase() }
+    private fun syncColor() = syncLiveData(_color) { getCurrentColorUseCase() }
+
+    fun setBrightness(brightness: Int) = viewModelScope.launch(Dispatchers.IO) {
+        setBrightnessUseCase(brightness)
+    }
+
+    fun setColor(color: String)  = viewModelScope.launch(Dispatchers.IO) {
+        setColorUseCase(color)
+    }
+
+    private fun <T> syncLiveData(
+        liveData: MutableLiveData<T>,
+        useCase: suspend () -> HttpResponseState<T>,
+    ) = viewModelScope.launch(Dispatchers.IO) {
+        when (val result = useCase()) {
+            is HttpResponseState.Success -> liveData.postValue(result.value)
+            is HttpResponseState.Failure -> logFailure(result.message)
+        }
+    }
+
+    private fun logFailure(message: String) = Log.d("http_failure", message)
 }
