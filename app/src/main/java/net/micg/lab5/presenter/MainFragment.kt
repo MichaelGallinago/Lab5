@@ -8,17 +8,16 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.SeekBar
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import by.kirich1409.viewbindingdelegate.viewBinding
 import javax.inject.Inject
 import kotlin.getValue
 import net.micg.lab5.R
-import net.micg.lab5.data.Color
 import net.micg.lab5.databinding.FragmentMainBinding
 import net.micg.lab5.di.appComponent
 import net.micg.lab5.di.viewModel.ViewModelFactory
+import net.micg.lab5.presenter.MainViewModel.Companion.EMPTY_COLOR
 import java.util.Locale
 
 class MainFragment : Fragment(R.layout.fragment_main) {
@@ -36,7 +35,8 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         }
     }
 
-    private var precision: Int = 1
+    private var precision = 1
+    private lateinit var colorsAdapter: ArrayAdapter<String>
 
     override fun onAttach(context: Context) {
         context.appComponent.inject(this)
@@ -51,9 +51,18 @@ class MainFragment : Fragment(R.layout.fragment_main) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setUpAdapter()
         setUpObservers()
         setUpFragment()
         viewModel.initData()
+    }
+
+    private fun setUpAdapter() {
+        colorsAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            mutableListOf<String>()
+        )
     }
 
     private fun setUpObservers() = with(viewModel) {
@@ -74,13 +83,17 @@ class MainFragment : Fragment(R.layout.fragment_main) {
                 }
             }
 
-            /*color.observe(viewLifecycleOwner) { color ->
-                colorSelector.setSelection(color.id)
+            colorName.observe(viewLifecycleOwner) { color ->
+                colorSpinner.setSelection(colorsAdapter.getPosition(color))
             }
 
-            colors.observe(viewLifecycleOwner) { colors ->
-                setUpSpinner(colors)
-            }*/
+            colorNames.observe(viewLifecycleOwner) { colors ->
+                with(colorsAdapter) {
+                    clear()
+                    add(EMPTY_COLOR)
+                    addAll(colors)
+                }
+            }
         }
     }
 
@@ -91,14 +104,13 @@ class MainFragment : Fragment(R.layout.fragment_main) {
             viewModel.switchLampState(isChecked)
         }
 
-        //colorSelector.onItemSelectedListener = ColorSpinnerItemSelectedListener()
+        setUpColorSpinner()
     }
 
-    private fun setUpSpinner(colors: List<Color>) = with(
-        ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, colors)
-    ) {
+    private fun setUpColorSpinner() = with(colorsAdapter) {
         setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.colorSelector.adapter = this
+        binding.colorSpinner.adapter = this
+        binding.colorSpinner.onItemSelectedListener = ColorSpinnerItemSelectedListener()
     }
 
     private fun setBrightnessValue(value: Int) {
@@ -121,19 +133,13 @@ class MainFragment : Fragment(R.layout.fragment_main) {
         }
     }
 
-    private inner class ColorSpinnerItemSelectedListener : AdapterView.OnItemSelectedListener {
+    private inner class ColorSpinnerItemSelectedListener() : AdapterView.OnItemSelectedListener {
         override fun onItemSelected(
-            parentView: AdapterView<*>,
-            selectedView: View?,
-            position: Int,
-            id: Long,
+            parentView: AdapterView<*>, selectedView: View?, position: Int, id: Long,
         ) {
-            val selectedItem = parentView.getItemAtPosition(position) as String
-            Toast.makeText(context, "Выбрано: $selectedItem", Toast.LENGTH_SHORT).show()
+            viewModel.setColor(parentView.getItemAtPosition(position) as String)
         }
 
-        override fun onNothingSelected(parentView: AdapterView<*>) {
-            Toast.makeText(context, "Ничего не выбрано", Toast.LENGTH_SHORT).show()
-        }
+        override fun onNothingSelected(parentView: AdapterView<*>) {}
     }
 }

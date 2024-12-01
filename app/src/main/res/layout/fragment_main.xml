@@ -53,7 +53,7 @@
         app:layout_constraintTop_toTopOf="@id/brightness_value" />
 
     <Spinner
-        android:id="@+id/color_selector"
+        android:id="@+id/color_spinner"
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_margin="16dp"
